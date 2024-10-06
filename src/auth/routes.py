@@ -26,7 +26,7 @@ router = APIRouter(tags=["auth"])
     status_code=status.HTTP_200_OK,
     response_model=list[UserResponse]
 )
-async def get_users(db: db_dependency,) -> list[UserResponse]:
+async def read_users(db: db_dependency,) -> list[UserResponse]:
     result = await db.execute(select(User))
     await db.close()
     return result.scalars().all()
@@ -65,7 +65,7 @@ async def login_for_access_token(
 
 
 @router.get("/users/me", response_model=UserResponse)
-async def get_current_active_user(
+async def read_current_active_user(
     current_user: Annotated[UserResponse, Depends(get_current_active_user)],
 ):
     return current_user
