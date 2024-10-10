@@ -12,14 +12,16 @@ from src.database import Base
 class RoleName(Enum):
     admin: str = "admin"
     staff: str = "staff"
-    user: str = "user"
+    customer: str = "customer"
 
 
 class Role(Base):
     __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[RoleName] = mapped_column(SQLEnum(RoleName), nullable=False, unique=True)
+    name: Mapped[RoleName] = mapped_column(
+        SQLEnum(RoleName), nullable=False, unique=True
+    )
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     users: Mapped[list["User"]] = relationship(back_populates="role")
@@ -41,7 +43,9 @@ class User(Base):
     )
     is_active: Mapped[bool] = mapped_column(default=True)
     role_id: Mapped[int] = mapped_column(
-        ForeignKey("roles.id", ondelete="RESTRICT"), nullable=False, default=RoleName.user
+        ForeignKey("roles.id", ondelete="RESTRICT"),
+        nullable=False,
+        default=RoleName.customer,
     )
     role: Mapped["Role"] = relationship(back_populates="users")
 

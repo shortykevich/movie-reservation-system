@@ -6,13 +6,14 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.exceptions import UserInactiveException, WrongCredentialException
 from src.auth.schemas import TokenData
 from src.users.schemas import UserResponse
 from src.auth.config import token_settings
 from src.users.models import User
-from src.database import db_dependency
+from src.database import get_db_session
 from src.utils.passwords import verify_pwd
 
 
@@ -41,7 +42,7 @@ def decode_jwt(
 
 
 async def get_user(
-    db: db_dependency,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
     username: str
 ) -> Optional[User]:
     stmt = select(User).where(User.username == username)
@@ -50,7 +51,7 @@ async def get_user(
 
 
 async def authenticate_user(
-    db: db_dependency,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
     username: str,
     password: str,
 ) -> Union[UserResponse, bool]:
@@ -73,7 +74,7 @@ def create_access_token(
 
 
 async def get_current_user(
-    db: db_dependency,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
     token: Annotated[Union[str, bytes], Depends(oauth2_scheme)],
 ) -> UserResponse:
     try:

@@ -1,8 +1,9 @@
-from typing import Annotated
+from typing import Optional, AsyncIterator
+from contextlib import asynccontextmanager
 
-from fastapi import Depends
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession, AsyncEngine, AsyncConnection
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from src.config import settings
 
@@ -11,19 +12,48 @@ class Base(DeclarativeBase):
     pass
 
 
-async_engine = create_async_engine(
-    settings.get_database_url(),
-    echo=True
-)
+class DBSessionManager:
+    def __init__(self, url: str):
+        self.engine: Optional[AsyncEngine] = create_async_engine(url)
+        self._sessionmaker: async_sessionmaker[AsyncSession] = async_sessionmaker(
+            autocommit=False, bind=self.engine
+        )
 
-async_session = async_sessionmaker(bind=async_engine)
+    async def close(self) -> None:
+        if not self.engine:
+            raise SQLAlchemyError
+        await self.engine.dispose()
+        self.engine = None
+        self._sessionmaker = None
 
-async def async_db_connection() -> AsyncSession:
-    async with async_session() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+    @asynccontextmanager
+    async def connect(self) -> AsyncIterator[AsyncConnection]:
+        if not self.engine:
+            raise SQLAlchemyError
+
+        async with self.engine.begin() as connection:
+            try:
+                yield connection
+            except SQLAlchemyError as e:
+                await connection.rollback()
+                raise e
+
+    @asynccontextmanager
+    async def session(self) -> AsyncIterator[AsyncSession]:
+        if not self._sessionmaker:
+            raise SQLAlchemyError
+
+        async with self._sessionmaker() as session:
+            try:
+                yield session
+            except SQLAlchemyError as e:
+                await session.rollback()
+                raise e
+            finally:
+                await session.close()
 
 
-db_dependency = Annotated[AsyncSession, Depends(async_db_connection)]
+async def get_db_session() -> AsyncSession:
+    sessionmanager = DBSessionManager(settings.get_database_url())
+    async with sessionmanager.session() as session:
+        yield session
