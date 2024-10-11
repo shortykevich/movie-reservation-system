@@ -23,3 +23,9 @@ class UserResponse(UserBase):
     is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserProfileResponse(UserBase):
+    role: RoleName
+
+    model_config = ConfigDict(from_attributes=True)

@@ -14,7 +14,7 @@ class Base(DeclarativeBase):
 
 class DBSessionManager:
     def __init__(self, url: str):
-        self.engine: Optional[AsyncEngine] = create_async_engine(url)
+        self.engine: Optional[AsyncEngine] = create_async_engine(url, echo=True)
         self._sessionmaker: async_sessionmaker[AsyncSession] = async_sessionmaker(
             autocommit=False, bind=self.engine
         )
