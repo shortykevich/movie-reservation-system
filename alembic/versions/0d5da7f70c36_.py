@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 2e9b7f091ab5
+Revision ID: 0d5da7f70c36
 Revises: 
-Create Date: 2024-10-10 17:12:01.206143
+Create Date: 2024-10-19 01:41:19.936611
 
 """
 
@@ -11,11 +11,10 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
-
 from src.users.models import RoleName
 
 # revision identifiers, used by Alembic.
-revision: str = "2e9b7f091ab5"
+revision: str = "0d5da7f70c36"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,7 +25,7 @@ def upgrade() -> None:
     sa.Enum("admin", "staff", "customer", name="rolename").create(op.get_bind())
     op.create_table(
         "roles",
-        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column(
             "name",
             postgresql.ENUM(

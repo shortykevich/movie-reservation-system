@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from sqlalchemy import insert
+from pydantic import BaseModel
 
 from src.users.models import User
 from src.database import get_db_session
@@ -44,7 +45,9 @@ async def login_for_access_token(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
-    user = await auth_service.authenticate_user(db, form_data.username, form_data.password)
+    user = await auth_service.authenticate_user(
+        db, form_data.username, form_data.password
+    )
     if not user:
         raise WrongCredentialException
     token_expires = timedelta(minutes=auth_service.access_token_expire_minutes)

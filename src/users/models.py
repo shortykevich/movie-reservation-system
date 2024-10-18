@@ -18,13 +18,16 @@ class RoleName(Enum):
 class Role(Base):
     __tablename__ = "roles"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[RoleName] = mapped_column(
         SQLEnum(RoleName), nullable=False, unique=True
     )
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
     users: Mapped[list["User"]] = relationship(back_populates="role")
+
+    def __repr__(self) -> str:
+        return str(self.name.name)
 
 
 class User(Base):
@@ -42,11 +45,12 @@ class User(Base):
         server_default=func.now(), onupdate=func.now()
     )
     is_active: Mapped[bool] = mapped_column(default=True)
+
     role_id: Mapped[int] = mapped_column(
         ForeignKey("roles.id", ondelete="RESTRICT"),
-        nullable=False,
-        default=RoleName.customer,
+        nullable=False
     )
+
     role: Mapped["Role"] = relationship(back_populates="users")
 
     def __repr__(self) -> str:
