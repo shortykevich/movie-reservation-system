@@ -18,14 +18,12 @@ class Base(DeclarativeBase):
     pass
 
 
-class DBSessionManager:
-    _engine: Optional[AsyncEngine] = create_async_engine(
-        settings.get_database_url(),
-        echo=True
-    )
-    _sessionmaker: Optional[async_sessionmaker[AsyncSession]] = async_sessionmaker(
-        autocommit=False, bind=_engine
-    )
+class DBAsyncSessionManager:
+    def __init__(self, url: str):
+        self._engine: Optional[AsyncEngine] = create_async_engine(url, echo=True)
+        self._sessionmaker: async_sessionmaker[AsyncSession] = async_sessionmaker(
+            autocommit=False, bind=self._engine
+        )
 
     async def close(self) -> None:
         if not self._engine:
@@ -60,12 +58,8 @@ class DBSessionManager:
             finally:
                 await session.close()
 
-    @classmethod
-    def get_engine(cls) -> AsyncEngine:
-        return cls._engine
 
-
-async def get_db_session() -> AsyncSession:
-    sessionmanager = DBSessionManager()
+async def get_async_db_session() -> AsyncSession:
+    sessionmanager = DBAsyncSessionManager(settings.get_database_url())
     async with sessionmanager.session() as session:
         yield session

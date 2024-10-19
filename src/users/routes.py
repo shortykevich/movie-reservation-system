@@ -8,7 +8,7 @@ from src.users.schemas import UserResponse, UserProfileResponse
 from src.users.utils import get_role_name_by_id
 from src.users.models import User
 from src.auth.dependencies import get_current_active_user
-from src.database import get_db_session
+from src.database import get_async_db_session
 from src.exceptions import UnauthorizedException
 
 router = APIRouter(
@@ -23,7 +23,7 @@ router = APIRouter(
     response_model=list[UserResponse]
 )
 async def read_all_users(
-    db: Annotated[AsyncSession, Depends(get_db_session)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
     current_user: Annotated[UserResponse, Depends(get_current_active_user)]
 ) -> list[UserResponse]:
     if not current_user.role_id == 1:

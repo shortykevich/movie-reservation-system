@@ -5,13 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.services import AuthenticationService
 from src.users.schemas import UserResponse
-from src.database import get_db_session
+from src.database import get_async_db_session
 
 
 auth_service = AuthenticationService()
 
 async def get_current_user(
-    db: Annotated[AsyncSession, Depends(get_db_session)],
+    db: Annotated[AsyncSession, Depends(get_async_db_session)],
     token: Annotated[Union[str, bytes], Depends(auth_service.oauth2_scheme)],
 ) -> UserResponse:
     return await auth_service.get_current_user(db, token)

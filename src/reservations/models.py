@@ -58,7 +58,7 @@ class Seat(Base):
     )
 
     cinema_hall_id: Mapped[int] = mapped_column(
-        ForeignKey("cinema_hall.id", ondelete="RESTRICT"),
+        ForeignKey("cinema_halls.id", ondelete="RESTRICT"),
         nullable=False
     )
 

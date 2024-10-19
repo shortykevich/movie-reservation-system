@@ -10,6 +10,8 @@ from alembic import context
 from src.config import settings
 from src.database import Base
 from src.users.models import User, Role # noqa
+from src.movies.models import Movie, Genre, Showtime, CinemaHall # noqa
+from src.reservations.models import Reservation, Seat # noqa
 
 
 # this is the Alembic Config object, which provides

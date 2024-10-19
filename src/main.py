@@ -4,16 +4,17 @@ from fastapi import FastAPI
 from sqlalchemy import select
 
 from src.constants import ROLES_MAPPING
-from src.database import DBSessionManager
+from src.database import DBAsyncSessionManager
 from src.users.models import Role
 from src.auth.routes import router as auth_router
 from src.users.routes import router as users_router
+from src.config import settings
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Startup and shutdown events handler"""
-    db_session_manager = DBSessionManager()
+    db_session_manager = DBAsyncSessionManager(settings.get_database_url())
     async with db_session_manager.session() as session:
         stmt = select(Role)
         roles = (
