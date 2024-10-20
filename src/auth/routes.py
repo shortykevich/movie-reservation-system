@@ -19,25 +19,6 @@ from src.users.utils import get_role_id_by_name, get_role_name_by_id
 router = APIRouter(tags=["auth"])
 
 
-@router.post(
-    "/signup", status_code=status.HTTP_201_CREATED, response_model=UserResponse
-)
-async def signup(
-        db: Annotated[AsyncSession, Depends(get_async_db_session)],
-        new_user: UserCreateRequest
-) -> UserResponse:
-    user_req = get_user_with_hashed_pwd(new_user)
-    role_id = get_role_id_by_name(user_req.pop('role'))
-    user_req.update({'role_id': role_id})
-
-    stmt = insert(User).values(**user_req).returning(User)
-    db_response = await db.execute(stmt)
-    created_user = db_response.scalar_one()
-    user_response = UserResponse.model_validate(created_user)
-    await db.commit()
-    return user_response
-
-
 @router.post("/token", status_code=status.HTTP_200_OK, response_model=Token)
 async def login_for_access_token(
     db: Annotated[AsyncSession, Depends(get_async_db_session)],

@@ -4,10 +4,11 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.services import AuthenticationService
+from src.exceptions import UnauthorizedException
 from src.users.models import RoleName
 from src.users.schemas import UserResponse
 from src.database import get_async_db_session
-
+from src.users.utils import get_role_name_by_id
 
 auth_service = AuthenticationService()
 
@@ -24,17 +25,13 @@ async def get_current_active_user(
 ) -> UserResponse:
     return await auth_service.get_current_active_user(current_user)
 
-# Template for authorization control:
 
-# def has_roles(required_roles: list[RoleName]):
-#     def decorator(func):
-#         async def wrapper(*args, **kwargs):
-#             user = await get_current_active_user()
-#             if user.role not in required_roles:
-#                 raise HTTPException(
-#                     status_code=403,
-#                     detail="Ye shall not pass!"
-#                 )
-#             return await func(*args, **kwargs)
-#         return wrapper
-#     return decorator
+def has_roles(required_roles: list[RoleName]):
+    async def role_checker(
+        current_user: Annotated[UserResponse, Depends(get_current_active_user)]
+    ):
+        if get_role_name_by_id(current_user.role_id) not in required_roles:
+            raise UnauthorizedException
+        return current_user
+
+    return Depends(role_checker)

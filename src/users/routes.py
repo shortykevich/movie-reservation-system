@@ -1,16 +1,15 @@
-from typing import Annotated, Optional
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
-from fastapi.params import Header
-from sqlalchemy import select
+from sqlalchemy import select, insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.users.schemas import UserResponse, UserProfileResponse
-from src.users.utils import get_role_name_by_id
-from src.users.models import User
-from src.auth.dependencies import get_current_active_user
+from src.users.schemas import UserResponse, UserProfileResponse, UserCreateRequest
+from src.users.utils import get_role_name_by_id, get_role_id_by_name
+from src.users.models import User, RoleName
+from src.auth.dependencies import get_current_active_user, has_roles
 from src.database import get_async_db_session
-from src.exceptions import UnauthorizedException
+from src.utils.passwords import get_user_with_hashed_pwd
 
 router = APIRouter(
     prefix="/users",
@@ -21,14 +20,12 @@ router = APIRouter(
 @router.get(
     "/",
     status_code=status.HTTP_200_OK,
-    response_model=list[UserResponse]
+    response_model=list[UserResponse],
+    dependencies=[has_roles([RoleName.admin, RoleName.staff])],
 )
 async def read_all_users(
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
-    current_user: Annotated[UserResponse, Depends(get_current_active_user)]
 ) -> list[UserResponse]:
-    if not current_user.role_id == 1:
-        raise UnauthorizedException
     stmt = select(User)
     db_response = await db.execute(stmt)
     users = db_response.scalars().all()
@@ -46,12 +43,22 @@ async def read_current_active_user(
     return UserProfileResponse.model_validate(user_dict_info)
 
 
-@router.get(
-    "/test-route",
-    status_code=status.HTTP_200_OK,
-    response_model=UserProfileResponse
+@router.post(
+    "/",
+    status_code=status.HTTP_201_CREATED,
+    response_model=UserResponse
 )
-async def read_test_route(
-    db: Annotated[AsyncSession, Depends(get_async_db_session)]
-) -> UserProfileResponse:
-    pass
+async def signup(
+        db: Annotated[AsyncSession, Depends(get_async_db_session)],
+        new_user: UserCreateRequest
+) -> UserResponse:
+    user_req = get_user_with_hashed_pwd(new_user)
+    role_id = get_role_id_by_name(user_req.pop('role'))
+    user_req.update({'role_id': role_id})
+
+    stmt = insert(User).values(**user_req).returning(User)
+    db_response = await db.execute(stmt)
+    created_user = db_response.scalar_one()
+    user_response = UserResponse.model_validate(created_user)
+    await db.commit()
+    return user_response
