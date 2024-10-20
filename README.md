@@ -1,2 +1,2 @@
-# Movie Reservation System
+# Movie reservation system
 
