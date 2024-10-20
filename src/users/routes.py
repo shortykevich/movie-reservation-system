@@ -1,6 +1,7 @@
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, status
+from fastapi.params import Header
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,3 +44,14 @@ async def read_current_active_user(
     user_dict_info.update({'role': role_name})
     print(user_dict_info)
     return UserProfileResponse.model_validate(user_dict_info)
+
+
+@router.get(
+    "/test-route",
+    status_code=status.HTTP_200_OK,
+    response_model=UserProfileResponse
+)
+async def read_test_route(
+    db: Annotated[AsyncSession, Depends(get_async_db_session)]
+) -> UserProfileResponse:
+    pass

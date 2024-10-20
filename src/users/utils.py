@@ -10,7 +10,7 @@ def get_role_id_by_name(role_name: RoleName) -> Optional[int]:
 
 def get_role_name_by_id(role_id: int) -> Optional[RoleName]:
     role = next(
-        filter(lambda item: item[1] == role_id, ROLES_MAPPING.items()),
+        (item for item in ROLES_MAPPING.items() if item[1] == role_id),
         None
     )
     return role[0] if role else None

@@ -12,6 +12,7 @@ from src.auth.schemas import TokenData
 from src.users.schemas import UserResponse
 from src.auth.config import token_settings
 from src.users.models import User
+from src.users.utils import get_role_name_by_id
 from src.utils.passwords import verify_pwd
 
 
@@ -33,8 +34,8 @@ class AuthenticationService:
             self, db: AsyncSession, username: str
     ) -> Optional[User]:
         stmt = select(User).where(User.username == username)
-        result = await db.execute(stmt)
-        return result.scalar_one_or_none()
+        user = await db.execute(stmt)
+        return user.scalar_one_or_none()
 
     async def authenticate_user(
             self, db: AsyncSession, username: str, password: str
@@ -44,15 +45,17 @@ class AuthenticationService:
             return False
         return UserResponse.model_validate(user)
 
-    def create_access_token(
-            self, data: dict, expires_delta: Optional[timedelta] = None
-    ) -> str:
-        to_encode = data.copy()
-        if expires_delta:
-            expire = datetime.now(timezone.utc) + expires_delta
-        else:
-            expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-        to_encode.update({"exp": expire})
+    def create_access_token(self, user: UserResponse) -> str:
+        expire = (
+            datetime.now(timezone.utc) +
+            timedelta(minutes=self.access_token_expire_minutes)
+        )
+        to_encode ={
+            "sub": user.username,
+            "role": get_role_name_by_id(user.role_id).name,
+            "iat": datetime.now(timezone.utc),
+            "exp": expire
+        }
         return self.encode_jwt(to_encode)
 
     async def get_current_user(
