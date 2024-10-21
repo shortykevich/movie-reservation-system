@@ -7,7 +7,7 @@ from jwt import InvalidTokenError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.exceptions import UserInactiveException, WrongCredentialException
+from src.exceptions import WrongCredentialException
 from src.auth.schemas import TokenData
 from src.users.schemas import UserResponse
 from src.auth.config import token_settings
@@ -30,36 +30,34 @@ class AuthenticationService:
     def decode_jwt(self, token: Union[str, bytes]) -> dict:
         return jwt.decode(token, self.public_key, algorithms=[self.algorithm])
 
-    async def get_user(
-            self, db: AsyncSession, username: str
-    ) -> Optional[User]:
+    async def get_user(self, db: AsyncSession, username: str) -> Optional[User]:
         stmt = select(User).where(User.username == username)
         user = await db.execute(stmt)
         return user.scalar_one_or_none()
 
     async def authenticate_user(
-            self, db: AsyncSession, username: str, password: str
+        self, db: AsyncSession, username: str, password: str
     ) -> Union[UserResponse, bool]:
         user = await self.get_user(db, username)
-        if not user or not verify_pwd(password, user.password):
+        is_valid_pwd = verify_pwd(password, user.password)
+        if not (user and is_valid_pwd and user.is_active):
             return False
         return UserResponse.model_validate(user)
 
     def create_access_token(self, user: UserResponse) -> str:
-        expire = (
-            datetime.now(timezone.utc) +
-            timedelta(minutes=self.access_token_expire_minutes)
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=self.access_token_expire_minutes
         )
-        to_encode ={
+        to_encode = {
             "sub": user.username,
             "role": get_role_name_by_id(user.role_id).name,
             "iat": datetime.now(timezone.utc),
-            "exp": expire
+            "exp": expire,
         }
         return self.encode_jwt(to_encode)
 
     async def get_current_user(
-            self, db: AsyncSession, token: Union[str, bytes]
+        self, db: AsyncSession, token: Union[str, bytes]
     ) -> UserResponse:
         try:
             payload = self.decode_jwt(token)
@@ -73,10 +71,3 @@ class AuthenticationService:
         if not user:
             raise WrongCredentialException
         return UserResponse.model_validate(user)
-
-    async def get_current_active_user(
-            self, current_user: UserResponse
-    ) -> UserResponse:
-        if not current_user.is_active:
-            raise UserInactiveException
-        return current_user

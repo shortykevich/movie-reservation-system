@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Integer, UniqueConstraint
+from sqlalchemy import Integer
 from sqlalchemy import func, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,11 +26,12 @@ class Movie(Base):
     poster_url: Mapped[str] = mapped_column(String(2048), nullable=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(),
-        onupdate=func.now()
+        server_default=func.now(), onupdate=func.now()
     )
 
-    genres: Mapped[list["Genre"]] = relationship(secondary="movie_genre", back_populates="movies")
+    genres: Mapped[list["Genre"]] = relationship(
+        secondary="movie_genre", back_populates="movies"
+    )
 
 
 class Genre(Base):
@@ -40,33 +41,30 @@ class Genre(Base):
     title: Mapped[str] = mapped_column(String(50), nullable=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
-    movies: Mapped[list["Movie"]] = relationship(secondary="movie_genre", back_populates="genres")
+    movies: Mapped[list["Movie"]] = relationship(
+        secondary="movie_genre", back_populates="genres"
+    )
 
 
 class Showtime(Base):
-    __tablename__ = 'showtimes'
+    __tablename__ = "showtimes"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     start_time: Mapped[datetime] = mapped_column(nullable=False)
     end_time: Mapped[datetime] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(),
-        onupdate=func.now()
+        server_default=func.now(), onupdate=func.now()
     )
 
     movie_id: Mapped[int] = mapped_column(
-        ForeignKey("movies.id", ondelete="RESTRICT"),
-        nullable=False
+        ForeignKey("movies.id", ondelete="RESTRICT"), nullable=False
     )
     cinema_hall_id: Mapped[int] = mapped_column(
-        ForeignKey("cinema_halls.id", ondelete="RESTRICT"),
-        nullable=False
+        ForeignKey("cinema_halls.id", ondelete="RESTRICT"), nullable=False
     )
 
-    reservations: Mapped[list["Reservation"]] = relationship(
-        back_populates="showtime"
-    )
+    reservations: Mapped[list["Reservation"]] = relationship(back_populates="showtime")
 
 
 class CinemaHall(Base):
@@ -76,13 +74,8 @@ class CinemaHall(Base):
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(),
-        onupdate=func.now()
+        server_default=func.now(), onupdate=func.now()
     )
 
-    showtimes: Mapped[list["Showtime"]] = relationship(
-        back_populates="cinema_hall"
-    )
-    seats: Mapped[list["Seat"]] = relationship(
-        back_populates="cinema_hall"
-    )
+    showtimes: Mapped[list["Showtime"]] = relationship(back_populates="cinema_hall")
+    seats: Mapped[list["Seat"]] = relationship(back_populates="cinema_hall")

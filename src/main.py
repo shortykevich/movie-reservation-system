@@ -17,9 +17,7 @@ async def lifespan(_: FastAPI):
     db_session_manager = DBAsyncSessionManager(settings.get_database_url())
     async with db_session_manager.session() as session:
         stmt = select(Role)
-        roles = (
-            await session.execute(stmt)
-        ).scalars().fetchall()
+        roles = (await session.execute(stmt)).scalars().fetchall()
         ROLES_MAPPING.update({role.name: role.id for role in roles})
         await session.close()
         yield

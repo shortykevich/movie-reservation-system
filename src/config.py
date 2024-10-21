@@ -13,11 +13,13 @@ class Settings(BaseSettings):
     db_name: str
 
     def get_database_url(self) -> str:
-        return (f'{self.db_driver}://{self.db_user}:{self.db_pwd.get_secret_value()}@'
-                f'{self.db_host}:{self.db_port}/{self.db_name}')
+        return (
+            f"{self.db_driver}://{self.db_user}:{self.db_pwd.get_secret_value()}@"
+            f"{self.db_host}:{self.db_port}/{self.db_name}"
+        )
 
     def get_secret_key(self) -> str:
         return self.secret_key.get_secret_value()
 
 
-settings = Settings(_env_file='.env')
+settings = Settings(_env_file=".env")

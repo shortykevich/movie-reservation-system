@@ -64,7 +64,11 @@ def upgrade() -> None:
     )
     # Creating basic roles in 'roles' table:
     roles_table = sa.table("roles", sa.column("name"))
-    roles_to_insert = [{"name": RoleName.admin}, {"name": RoleName.staff}, {"name": RoleName.customer}]
+    roles_to_insert = [
+        {"name": RoleName.admin},
+        {"name": RoleName.staff},
+        {"name": RoleName.customer},
+    ]
     op.bulk_insert(roles_table, roles_to_insert)
 
 

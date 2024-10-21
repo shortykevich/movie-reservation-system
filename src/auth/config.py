@@ -8,8 +8,8 @@ BASE_DIR = Path(__file__).parent.parent.parent
 
 class TokenSettings(BaseSettings):
     _ACCESS_TOKEN_EXPIRE_MINUTES = 60
-    public_key: Path = BASE_DIR / 'jwt-public.pem'
-    private_key: Path = BASE_DIR / 'jwt-private.pem'
+    public_key: Path = BASE_DIR / "jwt-public.pem"
+    private_key: Path = BASE_DIR / "jwt-private.pem"
     algorithm: str = "RS256"
 
     def get_public_key(self) -> str:

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     AsyncSession,
     AsyncEngine,
-    AsyncConnection
+    AsyncConnection,
 )
 
 from src.config import settings
