@@ -33,9 +33,10 @@ class Reservation(Base):
     )
 
     seats: Mapped[list["Seat"]] = relationship(
-        secondary="ReservationSeat",
-        back_populates="reservations",
+        secondary="ReservationSeat", back_populates="reservations"
     )
+    user: Mapped["User"] = relationship(back_populates="reservations")
+    showtime: Mapped["Showtime"] = relationship(back_populates="reservations")
 
 
 class Seat(Base):
@@ -57,3 +58,4 @@ class Seat(Base):
         secondary="ReservationSeat",
         back_populates="seats",
     )
+    cinema_hall: Mapped["CinemaHall"] = relationship(back_populates="seats")

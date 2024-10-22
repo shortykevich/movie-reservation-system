@@ -5,7 +5,6 @@ from sqlalchemy import func, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
-from src.reservations.models import Reservation, Seat
 
 
 class MovieGenre(Base):
@@ -32,6 +31,7 @@ class Movie(Base):
     genres: Mapped[list["Genre"]] = relationship(
         secondary="movie_genre", back_populates="movies"
     )
+    showtimes: Mapped["Showtime"] = relationship(back_populates="movie")
 
 
 class Genre(Base):
@@ -65,6 +65,8 @@ class Showtime(Base):
     )
 
     reservations: Mapped[list["Reservation"]] = relationship(back_populates="showtime")
+    movie: Mapped["Movie"] = relationship(back_populates="showtimes")
+    cinema_hall: Mapped["CinemaHall"] = relationship(back_populates="showtimes")
 
 
 class CinemaHall(Base):

@@ -48,3 +48,4 @@ class User(Base):
     )
 
     role: Mapped["Role"] = relationship(back_populates="users")
+    reservations: Mapped[list["Reservation"]] = relationship(back_populates="user")
