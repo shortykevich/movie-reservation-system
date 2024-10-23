@@ -9,6 +9,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.database import Base
 
 
+def _reservation_resolve():
+    from src.reservations.models import Reservation
+
+    return Reservation
+
+
 class RoleName(Enum):
     admin: str = "admin"
     staff: str = "staff"
@@ -48,4 +54,8 @@ class User(Base):
     )
 
     role: Mapped["Role"] = relationship(back_populates="users")
-    reservations: Mapped[list["Reservation"]] = relationship(back_populates="user")
+    reservations: Mapped[list["Reservation"]] = relationship(
+        _reservation_resolve,
+        back_populates="user",
+        lazy="dynamic"
+    )

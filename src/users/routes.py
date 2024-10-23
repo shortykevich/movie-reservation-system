@@ -1,7 +1,8 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy import select, insert
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.users.schemas import UserResponse, UserProfileResponse, UserCreateRequest
@@ -9,7 +10,8 @@ from src.users.utils import get_role_name_by_id, get_role_id_by_name
 from src.users.models import User, RoleName
 from src.dependencies import get_current_user, requires_roles
 from src.database import get_async_db_session
-from src.utils.passwords import get_user_with_hashed_pwd
+from src.utils.passwords import hash_user_pwd
+from src.users.repository import UsersRepository
 
 router = APIRouter(
     prefix="/users",
@@ -26,10 +28,8 @@ router = APIRouter(
 async def read_all_users(
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
 ) -> list[UserResponse]:
-    stmt = select(User)
-    db_response = await db.execute(stmt)
-    users = db_response.scalars().all()
-    return [UserResponse.model_validate(user) for user in users]
+    users_repo = UsersRepository(db)
+    return await users_repo.get_users()
 
 
 @router.get("/me", status_code=status.HTTP_200_OK, response_model=UserProfileResponse)
@@ -48,13 +48,6 @@ async def signup(
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
     new_user: UserCreateRequest,
 ) -> UserResponse:
-    user_req = get_user_with_hashed_pwd(new_user)
-    role_id = get_role_id_by_name(user_req.pop("role"))
-    user_req.update({"role_id": role_id})
-
-    stmt = insert(User).values(**user_req).returning(User)
-    db_response = await db.execute(stmt)
-    created_user = db_response.scalar_one()
-    user_response = UserResponse.model_validate(created_user)
-    await db.commit()
-    return user_response
+    users_repository = UsersRepository(db)
+    created_user = await users_repository.create_customer_user(new_user)
+    return created_user

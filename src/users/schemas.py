@@ -16,14 +16,14 @@ class UserBase(BaseModel):
 
 class UserCreateRequest(UserBase):
     password: str = Field(min_length=8, max_length=100)
-    role: RoleName = Field(default=RoleName.customer)
+    # role: RoleName = Field(default=RoleName.customer)
 
 
 class UserResponse(UserBase):
     role_id: int
     is_active: bool
 
-    model_config = ConfigDict(from_attributes=True, strict=False)
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserProfileResponse(UserBase):

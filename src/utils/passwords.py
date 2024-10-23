@@ -14,7 +14,8 @@ def verify_pwd(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def get_user_with_hashed_pwd(user: UserCreateRequest) -> dict:
-    dumped_user = user.model_dump()
-    dumped_user["password"] = get_pwd_hash(dumped_user["password"])
-    return dumped_user
+def hash_user_pwd(user: UserCreateRequest) -> dict:
+    """Return user's data with hashed password"""
+    user_data = user.model_dump()
+    user_data["password"] = get_pwd_hash(user_data["password"])
+    return user_data
