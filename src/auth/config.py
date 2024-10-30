@@ -6,24 +6,27 @@ from pydantic_settings import BaseSettings
 BASE_DIR = Path(__file__).parent.parent.parent
 
 
-class TokenSettings(BaseSettings):
-    _ACCESS_TOKEN_EXPIRE_MINUTES = 60
-    public_key: Path = BASE_DIR / "jwt-public.pem"
-    private_key: Path = BASE_DIR / "jwt-private.pem"
-    algorithm: str = "RS256"
+class JWTSettings(BaseSettings):
+    _access_token_expire_minutes = 1
+    _refresh_token_expire_minutes = 30 * 24 * 60
+    _public_key: Path = BASE_DIR / "jwt-public.pem"
+    _private_key: Path = BASE_DIR / "jwt-private.pem"
+    _algorithm: str = "RS256"
 
     def get_public_key(self) -> str:
-        return self.public_key.read_text()
+        return self._public_key.read_text()
 
     def get_private_key(self) -> str:
-        return self.private_key.read_text()
+        return self._private_key.read_text()
 
     def get_algorithm(self) -> str:
-        return self.algorithm
+        return self._algorithm
 
-    def get_access_token_expires_in(self) -> int:
-        """Token expires in *minutes*"""
-        return self._ACCESS_TOKEN_EXPIRE_MINUTES
+    def get_access_token_expires_in_minutes(self) -> int:
+        return self._access_token_expire_minutes
+
+    def get_refresh_token_expires_in_minutes(self) -> int:
+        return self._refresh_token_expire_minutes
 
 
-token_settings = TokenSettings()
+jwt_settings = JWTSettings()

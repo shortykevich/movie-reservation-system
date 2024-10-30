@@ -55,7 +55,5 @@ class User(Base):
 
     role: Mapped["Role"] = relationship(back_populates="users")
     reservations: Mapped[list["Reservation"]] = relationship(
-        _reservation_resolve,
-        back_populates="user",
-        lazy="dynamic"
+        _reservation_resolve, back_populates="user", lazy="dynamic"
     )
