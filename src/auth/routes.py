@@ -1,57 +1,54 @@
-from typing import Annotated, Optional
+from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.security import (
     OAuth2PasswordRequestForm,
     HTTPBearer,
-    HTTPAuthorizationCredentials,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from starlette.responses import Response
 
 from src.database import get_async_db_session
-from src.auth.schemas import Token
+from src.auth.schemas import AccessToken
 from src.dependencies import auth_service
-from src.exceptions import WrongCredentialError
 
 
-http_bearer = HTTPBearer()
+http_bearer = HTTPBearer(auto_error=False)
 router = APIRouter(tags=["auth"])
 
 
-@router.post("/token/", status_code=status.HTTP_200_OK, response_model=Token)
+@router.post("/token/", status_code=status.HTTP_200_OK, response_model=AccessToken)
 async def login_for_access_token(
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-) -> Token:
+    response: Response,
+) -> AccessToken:
     user = await auth_service.authenticate_user(
         db, form_data.username, form_data.password
     )
-    if not user:
-        raise WrongCredentialError(detail="Wrong credentials")
-    access_token = auth_service.create_access_token(user)
+    access_token = AccessToken(access_token=auth_service.create_access_token(user))
     refresh_token = auth_service.create_refresh_token(user)
-    return Token(
-        access_token=access_token,
-        refresh_token=refresh_token,
+    response.set_cookie(
+        "refresh_token",
+        refresh_token,
+        httponly=True,
+        max_age=auth_service.cookie_expire_seconds,
     )
+    return access_token
 
 
-@router.post(
-    "/refresh/",
-    response_model=Token,
-    response_model_exclude_none=True,
-    status_code=status.HTTP_200_OK,
-)
+@router.post("/refresh/", status_code=status.HTTP_200_OK)
 async def refresh_access_token(
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
-    refresh_token: Annotated[
-        Optional[HTTPAuthorizationCredentials], Depends(http_bearer)
-    ],
-) -> Token:
-    new_access_token = await auth_service.refresh_access_token(
-        db, refresh_token.credentials
-    )
-    return Token(
-        access_token=new_access_token,
-    )
+    request: Request,
+) -> AccessToken:
+    refresh_token = auth_service.get_refresh_token_from_request(request)
+    new_access_token = await auth_service.refresh_access_token(db, refresh_token)
+    return AccessToken(access_token=new_access_token)
+
+
+@router.post("/logout/", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(response: Response):
+    response.delete_cookie("refresh_token")
+    return None

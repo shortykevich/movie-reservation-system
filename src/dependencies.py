@@ -14,7 +14,7 @@ from src.database import get_async_db_session
 auth_service = AuthenticationService()
 
 
-def get_current_user(
+def get_current_user_from_jwt(
     token: Annotated[Union[str, bytes], Depends(auth_service.oauth2_scheme)],
 ) -> AccessTokenData:
     """
@@ -53,7 +53,7 @@ def requires_roles(*roles: RoleName) -> Any:
     """
 
     async def role_checker(
-        current_user: Annotated[AccessTokenData, Depends(get_current_user)]
+        current_user: Annotated[AccessTokenData, Depends(get_current_user_from_jwt)]
     ) -> bool:
         if current_user.role not in (role.value for role in roles):
             raise UnauthorizedError(

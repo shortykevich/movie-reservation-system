@@ -53,16 +53,18 @@ class UsersRepository:
         await self.db.commit()
         return user_response
 
-    async def update_user(self, user_data: UserUpdateRequest, id: int) -> UserResponse:
+    async def update_user(
+        self, user_data: UserUpdateRequest, user_id: int
+    ) -> UserResponse:
         stmt = (
             update(User)
-            .where(User.id == id)
+            .where(User.id == user_id)
             .values(**user_data.model_dump(exclude_unset=True))
             .returning(User)
         )
         try:
             db_response = await self.db.execute(stmt)
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
         new_user = db_response.scalar_one()
         user_response = UserResponse.model_validate(new_user)

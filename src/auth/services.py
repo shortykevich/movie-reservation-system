@@ -5,6 +5,7 @@ from typing import Optional, Union
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.requests import Request
 
 from src.auth.constants import TOKEN_TYPE_FIELD, ACCESS_TOKEN_TYPE, REFRESH_TOKEN_TYPE
 from src.exceptions import (
@@ -37,6 +38,7 @@ class AuthenticationService:
         self.refresh_token_expire_minutes = (
             jwt_settings.get_refresh_token_expires_in_minutes()
         )
+        self.cookie_expire_seconds = self.refresh_token_expire_minutes * 60
         self.oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
     def encode_jwt(self, payload: dict) -> str:
@@ -161,11 +163,11 @@ class AuthenticationService:
 
     async def authenticate_user(
         self, db: AsyncSession, username: str, password: str
-    ) -> Union[UserResponse, bool]:
+    ) -> UserResponse:
         user = await self.get_user(db, username)
         is_valid_pwd = verify_pwd(password, user.password)
         if not (user and is_valid_pwd and self.is_user_active(user)):
-            return False
+            raise WrongCredentialError(detail="Wrong credentials")
         return UserResponse.model_validate(user)
 
     async def get_user_from_access_token(
@@ -179,3 +181,10 @@ class AuthenticationService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
         return UserResponse.model_validate(user)
+
+    @staticmethod
+    def get_refresh_token_from_request(request: Request) -> Union[str, bytes]:
+        refresh_token = request.cookies.get("refresh_token")
+        if not refresh_token:
+            raise WrongCredentialError(detail="Refresh token not found")
+        return refresh_token
