@@ -22,7 +22,7 @@ class DBAsyncSessionManager:
     def __init__(self, url: str):
         self._engine: Optional[AsyncEngine] = create_async_engine(url, echo=True)
         self._sessionmaker: async_sessionmaker[AsyncSession] = async_sessionmaker(
-            autocommit=False, bind=self._engine
+            autocommit=False, bind=self._engine, expire_on_commit=False
         )
 
     async def close(self) -> None:

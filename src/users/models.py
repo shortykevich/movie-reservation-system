@@ -53,7 +53,7 @@ class User(Base):
         ForeignKey("roles.id", ondelete="RESTRICT"), nullable=False
     )
 
-    role: Mapped["Role"] = relationship(back_populates="users")
+    role: Mapped["Role"] = relationship(back_populates="users", lazy="joined")
     reservations: Mapped[list["Reservation"]] = relationship(
         _reservation_resolve, back_populates="user", lazy="dynamic"
     )

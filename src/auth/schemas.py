@@ -3,6 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel
 
+from src.users.schemas import UserResponse
+
 
 class AccessToken(BaseModel):
     access_token: str
@@ -16,8 +18,14 @@ class TokenData(BaseModel):
 
 
 class AccessTokenData(TokenData):
+    id: Optional[int] = None
     role: Optional[str] = None
 
 
 class RefreshTokenData(TokenData):
     pass
+
+
+class SignUpScheme(BaseModel):
+    user: UserResponse
+    token: AccessToken

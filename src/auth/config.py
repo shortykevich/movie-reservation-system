@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).parent.parent.parent
 
 
 class JWTSettings(BaseSettings):
-    _access_token_expire_minutes = 1
+    _access_token_expire_minutes = 60
     _refresh_token_expire_minutes = 30 * 24 * 60
     _public_key: Path = BASE_DIR / "jwt-public.pem"
     _private_key: Path = BASE_DIR / "jwt-private.pem"

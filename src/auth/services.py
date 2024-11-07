@@ -1,14 +1,13 @@
 import jwt
 from datetime import timedelta, datetime, timezone
-from typing import Optional, Union
+from typing import Union
 
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 
 from src.auth.constants import TOKEN_TYPE_FIELD, ACCESS_TOKEN_TYPE, REFRESH_TOKEN_TYPE
-from src.exceptions import (
+from src.auth.exceptions import (
     WrongCredentialError,
     InvalidTokenTypeError,
     TokenExpiredError,
@@ -16,19 +15,14 @@ from src.exceptions import (
     InvalidTokenDataError,
 )
 from src.auth.schemas import AccessTokenData, RefreshTokenData
-from src.users.schemas import UserResponse
+from src.users.repository import UsersRepository
+from src.users.schemas import UserResponse, RawUserResponse
 from src.auth.config import jwt_settings
-from src.users.models import User
-from src.users.utils import get_role_name_by_id
 from src.utils.passwords import verify_pwd
 
 
 class AuthenticationService:
     def __init__(self):
-        self.token_schemas = {
-            ACCESS_TOKEN_TYPE: AccessTokenData,
-            REFRESH_TOKEN_TYPE: RefreshTokenData,
-        }
         self.private_key = jwt_settings.get_private_key()
         self.public_key = jwt_settings.get_public_key()
         self.algorithm = jwt_settings.get_algorithm()
@@ -57,11 +51,12 @@ class AuthenticationService:
         to_encode = {
             TOKEN_TYPE_FIELD: token_type,
             "sub": user.username,
+            "sub_id": user.id,
             "iat": datetime.now(timezone.utc),
             "exp": expire,
         }
         if token_type == ACCESS_TOKEN_TYPE:
-            to_encode.update({"role": get_role_name_by_id(user.role_id).name})
+            to_encode.update({"role": user.role.name.value})
         return self.encode_jwt(to_encode)
 
     def create_access_token(self, user: UserResponse) -> str:
@@ -125,6 +120,7 @@ class AuthenticationService:
     def verify_access_token(self, token: Union[str, bytes]) -> AccessTokenData:
         payload = self.verify_token(token=token, token_type=ACCESS_TOKEN_TYPE)
         return AccessTokenData(
+            id=payload.get("sub_id"),
             username=payload.get("sub"),
             role=payload.get("role"),
             issued_at=payload.get("iat"),
@@ -150,13 +146,13 @@ class AuthenticationService:
         return self.create_access_token(UserResponse.model_validate(user))
 
     @staticmethod
-    async def get_user(db: AsyncSession, username: str) -> Optional[User]:
-        stmt = select(User).where(User.username == username)
-        user = await db.execute(stmt)
-        return user.scalar_one_or_none()
+    async def get_user(db: AsyncSession, username: str) -> RawUserResponse:
+        user_repository = UsersRepository(db)
+        user = await user_repository.get_user_by_name(username=username)
+        return RawUserResponse.model_validate(user)
 
     @staticmethod
-    def is_user_active(user: User) -> bool:
+    def is_user_active(user: RawUserResponse) -> bool:
         if not user.is_active:
             raise UserInactiveError(detail="User is inactive")
         return True
@@ -172,7 +168,7 @@ class AuthenticationService:
 
     async def get_user_from_access_token(
         self, db: AsyncSession, token: Union[str, bytes]
-    ) -> UserResponse:
+    ) -> RawUserResponse:
         token_data = self.verify_access_token(token)
         user = await self.get_user(db, username=token_data.username)
         if not user:
@@ -180,7 +176,7 @@ class AuthenticationService:
                 detail="Wrong credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        return UserResponse.model_validate(user)
+        return user
 
     @staticmethod
     def get_refresh_token_from_request(request: Request) -> Union[str, bytes]:

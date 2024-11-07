@@ -5,9 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.schemas import AccessTokenData
 from src.auth.services import AuthenticationService
-from src.exceptions import UnauthorizedError
+from src.auth.exceptions import UnauthorizedError
 from src.users.models import RoleName
-from src.users.schemas import UserResponse
+from src.users.schemas import RawUserResponse
 from src.database import get_async_db_session
 
 
@@ -29,7 +29,7 @@ def get_current_user_from_jwt(
 async def get_current_user_from_db(
     db: Annotated[AsyncSession, Depends(get_async_db_session)],
     token: Annotated[Union[str, bytes], Depends(auth_service.oauth2_scheme)],
-) -> UserResponse:
+) -> RawUserResponse:
     """
     Extends get_current_user dependency.
     Fetch the user's details from the database using the token's information.
